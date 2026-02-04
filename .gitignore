@@ -1,0 +1,3 @@
+# --- Secrets and Config ---
+# Never commit your API keys or environment variables
+.env
