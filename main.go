@@ -2,19 +2,30 @@ package main
 
 import (
 	"fmt"
+	"log" // Use log for better timestamps in GCP
 
 	"github.com/ericnberwick/daily-stox/application"
 	"github.com/ericnberwick/daily-stox/repository"
 )
 
-func main(){
-	
+func main() {
+
 	stockPick := application.GetStock()
-	fmt.Println("Stock pick is: ",stockPick.StockName)
+	if stockPick == nil {
+		log.Fatal("Failed to get stock pick")
+	}
+	fmt.Println("Stock pick is:", stockPick.StockName)
+
+	// 2. Update price
 	application.UpdateStockPriceByTicker(stockPick)
+
+	// 3. Insert into Database
 	err := repository.InsertStock(*stockPick)
 	if err != nil {
-		fmt.Errorf("error inserting stock: %w", err)
+		// This will stop the program and show the REAL error in GCP logs
+		fmt.Println("CRITICAL DATABASE ERROR: %v", err)
 	}
-	fmt.Printf("Sucessfully picked stock %s today and inserted into the database", stockPick.StockName)
+
+	// 4. Final Success Log
+	fmt.Printf("SUCCESS: Picked %s and confirmed DB insertion.", stockPick.StockName)
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ericnberwick/daily-stox/domain"
+	"github.com/ericnberwick/daily-stox/repository"
 	"github.com/joho/godotenv"
 	"google.golang.org/genai"
 )
@@ -53,12 +54,21 @@ func GetStock() *domain.StockRecommendation {
 }
 
 func GetPrompt() string {
+	stx,err := repository.GetStocks()
+	if err != nil {
+		fmt.Println("Error detected:", err) 
+	}
+	var stkTickers []string
+	for _, stk := range stx {
+		stkTickers = append(stkTickers, stk.StockTicker)
+	}
     currentDate := time.Now().Format("02/01/2006")
 	template := `
 		Imagine that you are a financial analyst in particular Peter Lynch.
 		You must pick one stock that you think will double, triple or more over the next week.
 		The stock must be from U.S. Equities (Stocks & ETFs) and be from 1 of the 19 major U.S. exchanges (NYSE, NASDAQ, etc.)
-		The current date is %s, dates should be in RFC3339 format
+		The current date is %s, dates should be in RFC3339 format.
+		DO NOT SUGGEST ANY OF THE FOLLOWING COMPANY'S WITH THE TICKER : %s
 		Pick the stock, show the price, and estimate a date for optimal sell.
 		Output the result in JSON.
 		For example:
@@ -85,7 +95,7 @@ func GetPrompt() string {
 		},
 		]
 		`
-	return fmt.Sprintf(template, currentDate)
+	return fmt.Sprintf(template, currentDate, stkTickers)
 }
 
 func ProcessAIResponse(resp *genai.GenerateContentResponse) ([]domain.StockRecommendation, error) {
